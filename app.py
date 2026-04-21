@@ -10,12 +10,12 @@ app.secret_key = os.environ.get("SECRET_KEY", "lmk_secret_key_change_me")
 # ===== ENV / PASSWORDS =====
 PASSWORD = os.environ.get("PASSWORD", "Limak2026")
 NILUFAR_PASSWORD = os.environ.get("NILUFAR_PASSWORD", "Nilufar2026")
-FATMA_PASSWORD = ("FATMA_PASSWORD", "Fatma2026")
-ADMIN_PASSWORD = ("ADMIN_PASSWORD", "Admin2026")
+FFATMA_PASSWORD = os.environ.get("FATMA_PASSWORD", "Fatma2026")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin2026")
 
-BOT_TOKEN = os.environ.get("8789258919:AAGdRLe7jFWjwwDaxiQCs70xf4ripnEEQXk", "")
-NILUFAR_CHAT_ID = os.environ.get("-1003917222406", "")
-FATMA_CHAT_ID = os.environ.get("-1003918354074", "")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+NILUFAR_CHAT_ID = os.environ.get("NILUFAR_CHAT_ID", "")
+FATMA_CHAT_ID = os.environ.get("FATMA_CHAT_ID", "")
 
 ORDERS_FILE = "web_orders.json"
 COUNTER_FILE = "web_counter.txt"
