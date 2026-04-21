@@ -14,8 +14,8 @@ FFATMA_PASSWORD = os.environ.get("FATMA_PASSWORD", "Fatma2026")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin2026")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-NILUFAR_CHAT_ID = os.environ.get("1003917222406", "")
-FATMA_CHAT_ID = os.environ.get("5112271269", "")
+NILUFAR_CHAT_ID = os.environ.get(" -1003917222406", "")
+FATMA_CHAT_ID = os.environ.get(" -5112271269", "")
 
 ORDERS_FILE = "web_orders.json"
 COUNTER_FILE = "web_counter.txt"
