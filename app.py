@@ -14,8 +14,8 @@ FFATMA_PASSWORD = os.environ.get("FATMA_PASSWORD", "Fatma2026")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin2026")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-NILUFAR_CHAT_ID = os.environ.get(" -1003917222406", "")
-FATMA_CHAT_ID = os.environ.get(" -5112271269", "")
+NILUFAR_CHAT_ID = os.environ.get("NILUFAR_CHAT_ID", "")
+FATMA_CHAT_ID = os.environ.get("FATMA_CHAT_ID", "")
 
 ORDERS_FILE = "web_orders.json"
 COUNTER_FILE = "web_counter.txt"
@@ -994,7 +994,6 @@ def update_status(order_id, status):
     return redirect(request.form.get("back_to", url_for("panel_home")))
 
 
-@app.route("/telegram_webhook", methods=["POST"])
 def telegram_webhook():
     data = request.get_json(silent=True)
 
