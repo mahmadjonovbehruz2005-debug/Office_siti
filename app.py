@@ -419,6 +419,12 @@ def render_page(title, body):
           <img src="{{ url_for('logo') }}" alt="LMK Logo">
           <div class="logo-title">LMK Заказ</div>
         </div>
+        <div class="hero">
+        <div class="hero-text">
+        <h1>LMK Order System</h1>
+        <p>Быстро • Удобно • Для офиса</p>
+        </div>
+    </div>
         {{ body|safe }}
       </div>
     </body>
