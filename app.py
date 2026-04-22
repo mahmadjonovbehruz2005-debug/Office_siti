@@ -287,20 +287,25 @@ def render_page(title, body):
           border-radius: 20px;
           box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
+        
         .logo-box {
-          text-align: center;
-          margin-bottom: 18px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 10px;
+          margin-bottom: 15px;
         }
         .logo-box img {
-          width: 120px;
-          height: 120px;
-          object-fit: cover;
-          border-radius: 20px;
-          border: 4px solid #f1f5f9;
-          box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
         }
+        .logo-title {
+        font-weight: bold;
+        }        
         h1, h2, h3 {
-          text-align: center;
+          text-align: left;
           margin-top: 0;
         }
         .btn {
@@ -411,6 +416,7 @@ def render_page(title, body):
       <div class="container">
         <div class="logo-box">
           <img src="{{ url_for('logo') }}" alt="LMK Logo">
+          <div class="logo-title">LMK Заказ</div>
         </div>
         {{ body|safe }}
       </div>
