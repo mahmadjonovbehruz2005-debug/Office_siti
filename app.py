@@ -10,7 +10,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "lmk_secret_key_change_me")
 # ===== ENV / PASSWORDS =====
 PASSWORD = os.environ.get("PASSWORD", "Limak2026")
 NILUFAR_PASSWORD = os.environ.get("NILUFAR_PASSWORD", "Nilufar2026")
-FFATMA_PASSWORD = os.environ.get("FATMA_PASSWORD", "Fatma2026")
+FATMA_PASSWORD = os.environ.get("FATMA_PASSWORD", "Fatma2026")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin2026")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
@@ -53,6 +53,9 @@ TEXTS = {
         "telegram_failed": "⚠️ Заказ сохранён, но Telegram не отправился",
         "new_orders_only": "Только новые",
         "all_orders": "Все заказы",
+        "orders_empty": "Заказов нет.",
+        "hero_title": "LMK Order System",
+        "hero_text": "Быстро • Удобно • Для офиса",
     },
     "tr": {
         "title": "LMK İçecek Siparişi",
@@ -83,6 +86,9 @@ TEXTS = {
         "telegram_failed": "⚠️ Sipariş kaydedildi ama Telegram gönderilemedi",
         "new_orders_only": "Sadece yeni",
         "all_orders": "Tüm siparişler",
+        "orders_empty": "Sipariş yok.",
+        "hero_title": "LMK Order System",
+        "hero_text": "Hızlı • Kolay • Ofis için",
     },
 }
 
@@ -211,18 +217,21 @@ def panel_status_message(lang, status):
 
 
 def send_telegram_message(chat_id, text, reply_markup=None):
-    if not BOT_TOKEN:
+    if not BOT_TOKEN or not chat_id:
         return False
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {"chat_id": chat_id, "text": text}
+
     if reply_markup:
         data["reply_markup"] = json.dumps(reply_markup)
 
     try:
         response = requests.post(url, data=data, timeout=20)
+        print("SEND RESPONSE:", response.text)
         return response.ok
-    except Exception:
+    except Exception as e:
+        print("SEND ERROR:", e)
         return False
 
 
@@ -235,8 +244,10 @@ def edit_telegram_message(chat_id, message_id, text):
 
     try:
         response = requests.post(url, data=data, timeout=20)
+        print("EDIT RESPONSE:", response.text)
         return response.ok
-    except Exception:
+    except Exception as e:
+        print("EDIT ERROR:", e)
         return False
 
 
@@ -248,7 +259,8 @@ def answer_callback_query(callback_query_id):
     try:
         requests.post(url, data={"callback_query_id": callback_query_id}, timeout=20)
         return True
-    except Exception:
+    except Exception as e:
+        print("CALLBACK ERROR:", e)
         return False
 
 
@@ -264,6 +276,9 @@ def logo():
 
 
 def render_page(title, body):
+    hero_title = t()["hero_title"]
+    hero_text = t()["hero_text"]
+
     return render_template_string("""
     <!doctype html>
     <html lang="{{ lang }}">
@@ -273,143 +288,352 @@ def render_page(title, body):
       <link rel="icon" href="{{ url_for('logo') }}">
       <title>{{ title }}</title>
       <style>
+        * {
+          box-sizing: border-box;
+        }
+
         body {
           font-family: Arial, sans-serif;
-          background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
           margin: 0;
           padding: 0;
           color: #0f172a;
+          background:
+            radial-gradient(circle at top left, rgba(255, 99, 132, 0.18), transparent 30%),
+            radial-gradient(circle at top right, rgba(59, 130, 246, 0.20), transparent 28%),
+            radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.20), transparent 30%),
+            radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.22), transparent 28%),
+            linear-gradient(135deg, #f8fafc, #eef2ff, #ecfeff, #fdf2f8);
+          min-height: 100vh;
+          animation: bgMove 10s ease-in-out infinite alternate;
         }
+
+        @keyframes bgMove {
+          0% { background-position: left top, right top, left bottom, right bottom, center; }
+          100% { background-position: left 20px top 10px, right 20px top 20px, left 15px bottom 15px, right 10px bottom 20px, center; }
+        }
+
         .container {
           max-width: 760px;
-          margin: 20px auto;
-          background: white;
+          margin: 24px auto;
           padding: 20px;
-          border-radius: 20px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+          border-radius: 28px;
+          background: rgba(255, 255, 255, 0.82);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(255,255,255,0.6);
+          box-shadow:
+            0 20px 50px rgba(15, 23, 42, 0.10),
+            0 8px 20px rgba(59, 130, 246, 0.08),
+            inset 0 1px 0 rgba(255,255,255,0.8);
+          animation: pageIn 0.6s ease;
         }
-        
+
+        @keyframes pageIn {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
         .logo-box {
           display: flex;
           align-items: center;
-          gap: 12px;
-          border-bottom: 1px solid #e2e8f0;
-          padding-bottom: 10px;
-          margin-bottom: 15px;
+          gap: 14px;
+          margin-bottom: 18px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.25);
         }
+
         .logo-box img {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
+          width: 56px;
+          height: 56px;
+          border-radius: 16px;
+          object-fit: cover;
+          box-shadow:
+            0 8px 20px rgba(0,0,0,0.12),
+            0 0 0 3px rgba(255,255,255,0.65);
+          animation: floatLogo 3s ease-in-out infinite;
         }
+
+        @keyframes floatLogo {
+          0% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+          100% { transform: translateY(0); }
+        }
+
         .logo-title {
-        font-weight: bold;
-        }        
-        h1, h2, h3 {
-          text-align: left;
-          margin-top: 0;
+          font-size: 22px;
+          font-weight: 800;
+          background: linear-gradient(90deg, #0f766e, #2563eb, #9333ea, #e11d48, #f59e0b);
+          background-size: 300% 300%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: titleGlow 6s ease infinite;
         }
+
+        @keyframes titleGlow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        .hero {
+          height: 200px;
+          border-radius: 24px;
+          margin-bottom: 20px;
+          position: relative;
+          overflow: hidden;
+          background-size: cover;
+          background-position: center;
+          animation: heroSlide 20s infinite;
+          box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .hero::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.18), transparent);
+        }
+
+        .hero-text {
+          position: absolute;
+          left: 22px;
+          bottom: 22px;
+          z-index: 2;
+          color: white;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        }
+
+        .hero-text h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 800;
+        }
+
+        .hero-text p {
+          margin: 6px 0 0;
+          font-size: 14px;
+          opacity: 0.96;
+        }
+
+        @keyframes heroSlide {
+          0%   { background-image: url("/static/images/bg1.jpg"); }
+          25%  { background-image: url("/static/images/bg2.jpg"); }
+          50%  { background-image: url("/static/images/bg3.jpg"); }
+          75%  { background-image: url("/static/images/bg4.jpg"); }
+          100% { background-image: url("/static/images/bg5.jpg"); }
+        }
+
+        h1, h2, h3 {
+          margin-top: 0;
+          margin-bottom: 16px;
+          font-weight: 800;
+          line-height: 1.2;
+        }
+
+        h2, h3 {
+          font-size: 20px;
+        }
+
         .btn {
           display: block;
           width: 100%;
-          box-sizing: border-box;
           text-align: center;
-          padding: 14px;
+          padding: 15px 16px;
           margin: 10px 0;
           border: none;
-          border-radius: 14px;
-          background: #0f766e;
+          border-radius: 18px;
           color: white;
           font-size: 16px;
+          font-weight: 700;
           text-decoration: none;
           cursor: pointer;
-          font-weight: 600;
+          transition: all 0.22s ease;
+          box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+          background: linear-gradient(135deg, #0f766e, #14b8a6);
         }
-        .btn:hover { opacity: 0.95; }
-        .btn-secondary { background: #475569; }
-        .btn-green { background: #15803d; }
-        .btn-red { background: #b91c1c; }
-        .btn-orange { background: #c2410c; }
+
+        .btn:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+          filter: brightness(1.04);
+        }
+
+        .btn:active {
+          transform: translateY(0);
+          box-shadow: 0 6px 12px rgba(15, 23, 42, 0.10);
+        }
+
+        .btn-secondary {
+          background: linear-gradient(135deg, #475569, #64748b);
+        }
+
+        .btn-green {
+          background: linear-gradient(135deg, #16a34a, #22c55e);
+        }
+
+        .btn-red {
+          background: linear-gradient(135deg, #dc2626, #f43f5e);
+        }
+
+        .btn-orange {
+          background: linear-gradient(135deg, #ea580c, #f59e0b);
+        }
+
         input {
           width: 100%;
-          box-sizing: border-box;
-          padding: 12px;
-          border-radius: 12px;
-          border: 1px solid #cbd5e1;
+          padding: 13px 14px;
+          border-radius: 16px;
+          border: 1px solid rgba(148, 163, 184, 0.35);
           margin: 8px 0 14px 0;
           font-size: 16px;
+          background: rgba(255,255,255,0.85);
+          outline: none;
+          transition: all 0.2s ease;
         }
+
+        input:focus {
+          border-color: #38bdf8;
+          box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+          transform: scale(1.01);
+        }
+
         .card {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          padding: 14px;
-          margin: 12px 0;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.90)),
+            linear-gradient(90deg, rgba(16,185,129,0.04), rgba(59,130,246,0.04), rgba(168,85,247,0.04));
+          border: 1px solid rgba(226,232,240,0.8);
+          border-radius: 20px;
+          padding: 16px;
+          margin: 14px 0;
           white-space: pre-line;
+          box-shadow:
+            0 8px 20px rgba(15,23,42,0.05),
+            inset 0 1px 0 rgba(255,255,255,0.8);
+          animation: fadeUp 0.35s ease;
         }
+
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         .small {
           color: #64748b;
           font-size: 14px;
           text-align: center;
         }
+
         .row {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
         }
+
         .row form {
           flex: 1;
           min-width: 120px;
         }
-        ul { margin: 0; padding-left: 20px; }
-        .role-card {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          padding: 14px;
-          margin: 12px 0;
-          text-align: center;
+
+        ul {
+          margin: 0;
+          padding-left: 20px;
         }
+
         .notice-ok {
-          background: #ecfdf5;
-          border: 1px solid #a7f3d0;
-          color: #065f46;
-          border-radius: 14px;
-          padding: 12px;
+          background: linear-gradient(135deg, #dcfce7, #ecfdf5);
+          border: 1px solid #86efac;
+          color: #166534;
+          border-radius: 18px;
+          padding: 13px;
           margin: 12px 0;
           text-align: center;
-          font-weight: 600;
+          font-weight: 700;
+          box-shadow: 0 8px 18px rgba(22, 163, 74, 0.08);
         }
+
         .notice-warn {
-          background: #fff7ed;
+          background: linear-gradient(135deg, #fff7ed, #fffbeb);
           border: 1px solid #fdba74;
           color: #9a3412;
-          border-radius: 14px;
-          padding: 12px;
+          border-radius: 18px;
+          padding: 13px;
           margin: 12px 0;
           text-align: center;
-          font-weight: 600;
+          font-weight: 700;
+          box-shadow: 0 8px 18px rgba(245, 158, 11, 0.08);
         }
+
         .filter-row {
           display: flex;
           gap: 10px;
           margin: 12px 0 20px;
           flex-wrap: wrap;
         }
+
         .filter-row a {
           flex: 1;
           min-width: 150px;
           text-align: center;
           text-decoration: none;
           padding: 12px;
-          border-radius: 12px;
-          background: #e2e8f0;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
           color: #0f172a;
-          font-weight: 600;
+          font-weight: 700;
+          transition: all 0.2s ease;
         }
+
+        .filter-row a:hover {
+          transform: translateY(-2px);
+        }
+
         .filter-row a.active {
-          background: #0f766e;
+          background: linear-gradient(135deg, #0f766e, #2563eb, #7c3aed);
           color: white;
+          box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+        }
+
+        @media (max-width: 640px) {
+          .container {
+            margin: 12px;
+            padding: 16px;
+            border-radius: 22px;
+          }
+
+          .logo-title {
+            font-size: 20px;
+          }
+
+          .hero {
+            height: 170px;
+            border-radius: 20px;
+          }
+
+          .hero-text h1 {
+            font-size: 22px;
+          }
+
+          .btn {
+            font-size: 16px;
+            padding: 15px;
+            border-radius: 16px;
+          }
+
+          h2, h3 {
+            font-size: 18px;
+          }
         }
       </style>
     </head>
@@ -419,17 +643,19 @@ def render_page(title, body):
           <img src="{{ url_for('logo') }}" alt="LMK Logo">
           <div class="logo-title">LMK Заказ</div>
         </div>
+
         <div class="hero">
-        <div class="hero-text">
-        <h1>LMK Order System</h1>
-        <p>Быстро • Удобно • Для офиса</p>
+          <div class="hero-text">
+            <h1>{{ hero_title }}</h1>
+            <p>{{ hero_text }}</p>
+          </div>
         </div>
-    </div>
+
         {{ body|safe }}
       </div>
     </body>
     </html>
-    """, title=title, body=body, lang=get_lang())
+    """, title=title, body=body, lang=get_lang(), hero_title=hero_title, hero_text=hero_text)
 
 
 @app.route("/")
@@ -575,10 +801,7 @@ def drink():
             return redirect(url_for("tea_option"))
         return redirect(url_for("coffee_option"))
     lang = get_lang()
-    if lang == "ru":
-        items = ["🍵 Чай зелёный", "🍵 Чай чёрный", "☕ Кофе", "💧 Вода"]
-    else:
-        items = ["🍵 Yeşil çay", "🍵 Siyah çay", "☕ Kahve", "💧 Su"]
+    items = ["🍵 Чай зелёный", "🍵 Чай чёрный", "☕ Кофе", "💧 Вода"] if lang == "ru" else ["🍵 Yeşil çay", "🍵 Siyah çay", "☕ Kahve", "💧 Su"]
     buttons = "".join(f'<button class="btn" type="submit" name="drink" value="{x}">{x}</button>' for x in items)
     body = f"""
     <h2>{t()['drink']}</h2>
@@ -685,7 +908,7 @@ def more_or_finish():
     <div class="card">{cart_html}</div>
     <form method="post">
       <button class="btn" type="submit" name="act" value="more">{t()['add_more']}</button>
-      <button class="btn" type="submit" name="act" value="finish">{t()['finish']}</button>
+      <button class="btn btn-green" type="submit" name="act" value="finish">{t()['finish']}</button>
     </form>
     """
     return render_page(t()["more"], body)
@@ -883,7 +1106,7 @@ def panel_home():
     <h2>Панель управления</h2>
     <a class="btn" href="{url_for('panel_chaynitsa', who='Nilufar')}">🫖 Nilufar</a>
     <a class="btn" href="{url_for('panel_chaynitsa', who='Fatma')}">🫖 Fatma</a>
-    <a class="btn" href="{url_for('admin_panel')}">👑 Администратор</a>
+    <a class="btn btn-orange" href="{url_for('admin_panel')}">👑 Администратор</a>
     <a class="btn btn-secondary" href="{url_for('floor')}">↩ На сайт заказов</a>
     """
     return render_page("Panel", body)
@@ -950,7 +1173,7 @@ def panel_chaynitsa(who):
         </div>
         """
     if not cards:
-        cards = "<div class='card'>Заказов нет.</div>"
+        cards = f"<div class='card'>{t()['orders_empty']}</div>"
 
     back_link = url_for("panel_home") if role == "admin" else url_for("panel_chaynitsa", who=who)
 
@@ -988,7 +1211,7 @@ def admin_panel():
         </div>
         """
     if not cards:
-        cards = "<div class='card'>Заказов нет.</div>"
+        cards = f"<div class='card'>{t()['orders_empty']}</div>"
 
     body = f"""
     <h2>👑 Администратор</h2>
@@ -1007,6 +1230,7 @@ def update_status(order_id, status):
     return redirect(request.form.get("back_to", url_for("panel_home")))
 
 
+@app.route("/telegram_webhook", methods=["POST"])
 def telegram_webhook():
     data = request.get_json(silent=True)
 
@@ -1073,10 +1297,3 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-@app.route('/telegram_webhook', methods=['POST'])
-def telegram_webhook():
-    data = request.get_json()
-    print(data)
-
-    # ҷавоб ба Telegram (обязательно)
-    return "ok"
