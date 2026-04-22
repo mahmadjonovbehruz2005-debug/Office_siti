@@ -53,9 +53,7 @@ TEXTS = {
         "telegram_failed": "⚠️ Заказ сохранён, но Telegram не отправился",
         "new_orders_only": "Только новые",
         "all_orders": "Все заказы",
-        "orders_empty": "Заказов нет.",
-        "hero_title": "LMK Order System",
-        "hero_text": "Быстро • Удобно • Для офиса",
+        "no_orders": "Заказов нет.",
     },
     "tr": {
         "title": "LMK İçecek Siparişi",
@@ -86,9 +84,7 @@ TEXTS = {
         "telegram_failed": "⚠️ Sipariş kaydedildi ama Telegram gönderilemedi",
         "new_orders_only": "Sadece yeni",
         "all_orders": "Tüm siparişler",
-        "orders_empty": "Sipariş yok.",
-        "hero_title": "LMK Order System",
-        "hero_text": "Hızlı • Kolay • Ofis için",
+        "no_orders": "Sipariş yok.",
     },
 }
 
@@ -216,38 +212,55 @@ def panel_status_message(lang, status):
     return status_text(lang, status)
 
 
+def get_target_chat_id(chaynitsa_value):
+    if chaynitsa_value == "Nilufar":
+        return NILUFAR_CHAT_ID
+    return FATMA_CHAT_ID
+
+
 def send_telegram_message(chat_id, text, reply_markup=None):
-    if not BOT_TOKEN or not chat_id:
+    if not BOT_TOKEN:
+        print("SEND ERROR: NO BOT TOKEN")
+        return False
+    if not chat_id:
+        print("SEND ERROR: NO CHAT ID")
         return False
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {"chat_id": chat_id, "text": text}
-
+    data = {
+        "chat_id": chat_id,
+        "text": text,
+    }
     if reply_markup:
         data["reply_markup"] = json.dumps(reply_markup)
 
     try:
         response = requests.post(url, data=data, timeout=20)
-        print("SEND RESPONSE:", response.text)
+        print("SEND RESPONSE:", response.status_code, response.text)
         return response.ok
     except Exception as e:
-        print("SEND ERROR:", e)
+        print("SEND ERROR:", str(e))
         return False
 
 
 def edit_telegram_message(chat_id, message_id, text):
     if not BOT_TOKEN:
+        print("NO BOT TOKEN")
         return False
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText"
-    data = {"chat_id": chat_id, "message_id": message_id, "text": text}
+    data = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": text
+    }
 
     try:
         response = requests.post(url, data=data, timeout=20)
-        print("EDIT RESPONSE:", response.text)
+        print("EDIT RESPONSE:", response.status_code, response.text)
         return response.ok
     except Exception as e:
-        print("EDIT ERROR:", e)
+        print("EDIT ERROR:", str(e))
         return False
 
 
@@ -256,18 +269,18 @@ def answer_callback_query(callback_query_id):
         return False
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery"
+
     try:
-        requests.post(url, data={"callback_query_id": callback_query_id}, timeout=20)
-        return True
+        response = requests.post(
+            url,
+            data={"callback_query_id": callback_query_id},
+            timeout=20
+        )
+        print("CALLBACK RESPONSE:", response.status_code, response.text)
+        return response.ok
     except Exception as e:
-        print("CALLBACK ERROR:", e)
+        print("CALLBACK ERROR:", str(e))
         return False
-
-
-def get_target_chat_id(chaynitsa_value):
-    if chaynitsa_value == "Nilufar":
-        return NILUFAR_CHAT_ID
-    return FATMA_CHAT_ID
 
 
 @app.route("/logo")
@@ -276,9 +289,6 @@ def logo():
 
 
 def render_page(title, body):
-    hero_title = t()["hero_title"]
-    hero_text = t()["hero_text"]
-
     return render_template_string("""
     <!doctype html>
     <html lang="{{ lang }}">
@@ -288,9 +298,7 @@ def render_page(title, body):
       <link rel="icon" href="{{ url_for('logo') }}">
       <title>{{ title }}</title>
       <style>
-        * {
-          box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
           font-family: Arial, sans-serif;
@@ -304,12 +312,6 @@ def render_page(title, body):
             radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.22), transparent 28%),
             linear-gradient(135deg, #f8fafc, #eef2ff, #ecfeff, #fdf2f8);
           min-height: 100vh;
-          animation: bgMove 10s ease-in-out infinite alternate;
-        }
-
-        @keyframes bgMove {
-          0% { background-position: left top, right top, left bottom, right bottom, center; }
-          100% { background-position: left 20px top 10px, right 20px top 20px, left 15px bottom 15px, right 10px bottom 20px, center; }
         }
 
         .container {
@@ -318,25 +320,9 @@ def render_page(title, body):
           padding: 20px;
           border-radius: 28px;
           background: rgba(255, 255, 255, 0.82);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
+          backdrop-filter: blur(16px);
           border: 1px solid rgba(255,255,255,0.6);
-          box-shadow:
-            0 20px 50px rgba(15, 23, 42, 0.10),
-            0 8px 20px rgba(59, 130, 246, 0.08),
-            inset 0 1px 0 rgba(255,255,255,0.8);
-          animation: pageIn 0.6s ease;
-        }
-
-        @keyframes pageIn {
-          from {
-            opacity: 0;
-            transform: translateY(18px) scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
         }
 
         .logo-box {
@@ -353,16 +339,7 @@ def render_page(title, body):
           height: 56px;
           border-radius: 16px;
           object-fit: cover;
-          box-shadow:
-            0 8px 20px rgba(0,0,0,0.12),
-            0 0 0 3px rgba(255,255,255,0.65);
-          animation: floatLogo 3s ease-in-out infinite;
-        }
-
-        @keyframes floatLogo {
-          0% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-          100% { transform: translateY(0); }
+          box-shadow: 0 8px 20px rgba(0,0,0,0.12);
         }
 
         .logo-title {
@@ -372,24 +349,17 @@ def render_page(title, body):
           background-size: 300% 300%;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          animation: titleGlow 6s ease infinite;
-        }
-
-        @keyframes titleGlow {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
         }
 
         .hero {
-          height: 200px;
-          border-radius: 24px;
+          height: 180px;
+          border-radius: 20px;
           margin-bottom: 20px;
           position: relative;
           overflow: hidden;
           background-size: cover;
           background-position: center;
-          animation: heroSlide 20s infinite;
+          animation: heroSlide 15s infinite;
           box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         }
 
@@ -397,28 +367,26 @@ def render_page(title, body):
           content: "";
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.18), transparent);
+          background: linear-gradient(90deg, rgba(0,0,0,0.55), transparent);
         }
 
         .hero-text {
           position: absolute;
-          left: 22px;
-          bottom: 22px;
+          left: 20px;
+          bottom: 20px;
           z-index: 2;
           color: white;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.35);
         }
 
         .hero-text h1 {
           margin: 0;
-          font-size: 28px;
-          font-weight: 800;
+          font-size: 22px;
         }
 
         .hero-text p {
-          margin: 6px 0 0;
+          margin: 4px 0 0;
           font-size: 14px;
-          opacity: 0.96;
+          opacity: 0.95;
         }
 
         @keyframes heroSlide {
@@ -434,10 +402,6 @@ def render_page(title, body):
           margin-bottom: 16px;
           font-weight: 800;
           line-height: 1.2;
-        }
-
-        h2, h3 {
-          font-size: 20px;
         }
 
         .btn {
@@ -459,31 +423,14 @@ def render_page(title, body):
         }
 
         .btn:hover {
-          transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+          transform: translateY(-2px);
           filter: brightness(1.04);
         }
 
-        .btn:active {
-          transform: translateY(0);
-          box-shadow: 0 6px 12px rgba(15, 23, 42, 0.10);
-        }
-
-        .btn-secondary {
-          background: linear-gradient(135deg, #475569, #64748b);
-        }
-
-        .btn-green {
-          background: linear-gradient(135deg, #16a34a, #22c55e);
-        }
-
-        .btn-red {
-          background: linear-gradient(135deg, #dc2626, #f43f5e);
-        }
-
-        .btn-orange {
-          background: linear-gradient(135deg, #ea580c, #f59e0b);
-        }
+        .btn-secondary { background: linear-gradient(135deg, #475569, #64748b); }
+        .btn-green { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .btn-red { background: linear-gradient(135deg, #dc2626, #f43f5e); }
+        .btn-orange { background: linear-gradient(135deg, #ea580c, #f59e0b); }
 
         input {
           width: 100%;
@@ -494,39 +441,16 @@ def render_page(title, body):
           font-size: 16px;
           background: rgba(255,255,255,0.85);
           outline: none;
-          transition: all 0.2s ease;
-        }
-
-        input:focus {
-          border-color: #38bdf8;
-          box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
-          transform: scale(1.01);
         }
 
         .card {
-          background:
-            linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.90)),
-            linear-gradient(90deg, rgba(16,185,129,0.04), rgba(59,130,246,0.04), rgba(168,85,247,0.04));
+          background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.90));
           border: 1px solid rgba(226,232,240,0.8);
           border-radius: 20px;
           padding: 16px;
           margin: 14px 0;
           white-space: pre-line;
-          box-shadow:
-            0 8px 20px rgba(15,23,42,0.05),
-            inset 0 1px 0 rgba(255,255,255,0.8);
-          animation: fadeUp 0.35s ease;
-        }
-
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          box-shadow: 0 8px 20px rgba(15,23,42,0.05);
         }
 
         .small {
@@ -560,7 +484,6 @@ def render_page(title, body):
           margin: 12px 0;
           text-align: center;
           font-weight: 700;
-          box-shadow: 0 8px 18px rgba(22, 163, 74, 0.08);
         }
 
         .notice-warn {
@@ -572,7 +495,6 @@ def render_page(title, body):
           margin: 12px 0;
           text-align: center;
           font-weight: 700;
-          box-shadow: 0 8px 18px rgba(245, 158, 11, 0.08);
         }
 
         .filter-row {
@@ -592,17 +514,11 @@ def render_page(title, body):
           background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
           color: #0f172a;
           font-weight: 700;
-          transition: all 0.2s ease;
-        }
-
-        .filter-row a:hover {
-          transform: translateY(-2px);
         }
 
         .filter-row a.active {
           background: linear-gradient(135deg, #0f766e, #2563eb, #7c3aed);
           color: white;
-          box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
         }
 
         @media (max-width: 640px) {
@@ -611,28 +527,9 @@ def render_page(title, body):
             padding: 16px;
             border-radius: 22px;
           }
-
-          .logo-title {
-            font-size: 20px;
-          }
-
-          .hero {
-            height: 170px;
-            border-radius: 20px;
-          }
-
-          .hero-text h1 {
-            font-size: 22px;
-          }
-
           .btn {
             font-size: 16px;
             padding: 15px;
-            border-radius: 16px;
-          }
-
-          h2, h3 {
-            font-size: 18px;
           }
         }
       </style>
@@ -646,8 +543,8 @@ def render_page(title, body):
 
         <div class="hero">
           <div class="hero-text">
-            <h1>{{ hero_title }}</h1>
-            <p>{{ hero_text }}</p>
+            <h1>LMK Order System</h1>
+            <p>Быстро • Удобно • Для офиса</p>
           </div>
         </div>
 
@@ -655,7 +552,7 @@ def render_page(title, body):
       </div>
     </body>
     </html>
-    """, title=title, body=body, lang=get_lang(), hero_title=hero_title, hero_text=hero_text)
+    """, title=title, body=body, lang=get_lang())
 
 
 @app.route("/")
@@ -683,6 +580,7 @@ def password():
             session["authorized"] = True
             return redirect(url_for("name"))
         error = TEXTS["ru"]["wrong_password"]
+
     body = f"""
     <h2>{TEXTS['ru']['title']}</h2>
     <form method="post">
@@ -702,6 +600,7 @@ def name():
         if user_name:
             session["name"] = user_name
             return redirect(url_for("language"))
+
     body = f"""
     <h2>{TEXTS['ru']['title']}</h2>
     <form method="post">
@@ -718,6 +617,7 @@ def language():
     if request.method == "POST":
         session["language"] = request.form.get("language", "ru")
         return redirect(url_for("floor"))
+
     body = """
     <h2>Выберите язык / Dil seçin</h2>
     <form method="post">
@@ -736,9 +636,11 @@ def floor():
         session.pop("office", None)
         session["cart"] = []
         return redirect(url_for("chaynitsa"))
+
     lang = get_lang()
     floor1 = "1 этаж" if lang == "ru" else "1. kat"
     floor2 = "2 этаж" if lang == "ru" else "2. kat"
+
     body = f"""
     <h2>{t()['floor']}</h2>
     <form method="post">
@@ -755,6 +657,7 @@ def chaynitsa():
     if request.method == "POST":
         session["chaynitsa"] = request.form.get("chaynitsa")
         return redirect(url_for("office"))
+
     body = f"""
     <h2>{t()['choose_chaynitsa']}</h2>
     <form method="post">
@@ -771,14 +674,17 @@ def office():
     floor_value = session.get("floor")
     if not floor_value:
         return redirect(url_for("floor"))
+
     if request.method == "POST":
         session["office"] = request.form.get("office")
         session["cart"] = []
         return redirect(url_for("drink"))
+
     options = "".join(
         f'<button class="btn" type="submit" name="office" value="{office}">{office}</button>'
         for office in OFFICES[floor_value]
     )
+
     body = f"""
     <h2>{t()['office']}</h2>
     <form method="post">
@@ -794,15 +700,24 @@ def drink():
     if request.method == "POST":
         drink_value = request.form.get("drink")
         session["selected_drink"] = drink_value
+
         if drink_value in ["💧 Вода", "💧 Su"]:
             session["pending_item"] = drink_value
             return redirect(url_for("quantity"))
+
         if drink_value in ["🍵 Чай зелёный", "🍵 Чай чёрный", "🍵 Yeşil çay", "🍵 Siyah çay"]:
             return redirect(url_for("tea_option"))
+
         return redirect(url_for("coffee_option"))
+
     lang = get_lang()
-    items = ["🍵 Чай зелёный", "🍵 Чай чёрный", "☕ Кофе", "💧 Вода"] if lang == "ru" else ["🍵 Yeşil çay", "🍵 Siyah çay", "☕ Kahve", "💧 Su"]
+    if lang == "ru":
+        items = ["🍵 Чай зелёный", "🍵 Чай чёрный", "☕ Кофе", "💧 Вода"]
+    else:
+        items = ["🍵 Yeşil çay", "🍵 Siyah çay", "☕ Kahve", "💧 Su"]
+
     buttons = "".join(f'<button class="btn" type="submit" name="drink" value="{x}">{x}</button>' for x in items)
+
     body = f"""
     <h2>{t()['drink']}</h2>
     <form method="post">
@@ -819,9 +734,11 @@ def tea_option():
         opt = request.form.get("option")
         session["pending_item"] = f"{session['selected_drink']} — {opt}"
         return redirect(url_for("quantity"))
+
     lang = get_lang()
     options = ["🍬 С сахаром", "🚫 Без сахара", "🍋 С лимоном"] if lang == "ru" else ["🍬 Şekerli", "🚫 Şekersiz", "🍋 Limonlu"]
     buttons = "".join(f'<button class="btn" type="submit" name="option" value="{x}">{x}</button>' for x in options)
+
     body = f"""
     <h2>{t()['tea_option']}</h2>
     <form method="post">
@@ -839,11 +756,14 @@ def coffee_option():
         if opt == "☕ Türk kahvesi":
             session["coffee_subtype"] = opt
             return redirect(url_for("turk_sugar"))
+
         session["pending_item"] = f"{session['selected_drink']} — {opt}"
         return redirect(url_for("quantity"))
+
     lang = get_lang()
     options = ["☕ Sade kahve", "☕ Türk kahvesi", "🥛 С молоком", "🚫 Без молока", "☕ Капучино"] if lang == "ru" else ["☕ Sade kahve", "☕ Türk kahvesi", "🥛 Sütlü", "🚫 Sütsüz", "☕ Kapuçino"]
     buttons = "".join(f'<button class="btn" type="submit" name="option" value="{x}">{x}</button>' for x in options)
+
     body = f"""
     <h2>{t()['coffee_option']}</h2>
     <form method="post">
@@ -860,9 +780,11 @@ def turk_sugar():
         sugar = request.form.get("sugar")
         session["pending_item"] = f"{session['selected_drink']} — {session['coffee_subtype']} — {sugar}"
         return redirect(url_for("quantity"))
+
     lang = get_lang()
     options = ["🍬 С сахаром", "🚫 Без сахара"] if lang == "ru" else ["🍬 Şekerli", "🚫 Şekersiz"]
     buttons = "".join(f'<button class="btn" type="submit" name="sugar" value="{x}">{x}</button>' for x in options)
+
     body = f"""
     <h2>{t()['turk_sugar']}</h2>
     <form method="post">
@@ -884,7 +806,9 @@ def quantity():
         session.pop("selected_drink", None)
         session.pop("coffee_subtype", None)
         return redirect(url_for("more_or_finish"))
+
     buttons = "".join(f'<button class="btn" type="submit" name="qty" value="{i}">{i}</button>' for i in [1, 2, 3, 4, 5])
+
     body = f"""
     <h2>{t()['qty']}</h2>
     <form method="post">
@@ -902,13 +826,15 @@ def more_or_finish():
         if act == "more":
             return redirect(url_for("drink"))
         return redirect(url_for("finish_order"))
+
     cart_html = "<ul>" + "".join(f"<li>{i+1}. {x['name']} × {x['qty']}</li>" for i, x in enumerate(session.get("cart", []))) + "</ul>"
+
     body = f"""
     <h2>{t()['more']}</h2>
     <div class="card">{cart_html}</div>
     <form method="post">
       <button class="btn" type="submit" name="act" value="more">{t()['add_more']}</button>
-      <button class="btn btn-green" type="submit" name="act" value="finish">{t()['finish']}</button>
+      <button class="btn" type="submit" name="act" value="finish">{t()['finish']}</button>
     </form>
     """
     return render_page(t()["more"], body)
@@ -928,6 +854,7 @@ def finish_order():
     office_value = session.get("office")
     chaynitsa_value = session.get("chaynitsa")
     now_time = datetime.now().strftime("%H:%M")
+
     current_id = order_counter
     order_counter += 1
     save_counter(order_counter)
@@ -946,6 +873,7 @@ def finish_order():
         "time": now_time,
         "status": "new",
     }
+
     orders[str(current_id)] = order_data
     save_json(ORDERS_FILE, orders)
 
@@ -1019,11 +947,7 @@ def my_orders():
     if not name_value:
         return redirect(url_for("name"))
 
-    user_orders = []
-    for _, order in orders.items():
-        if order.get("name") == name_value:
-            user_orders.append(order)
-
+    user_orders = [order for order in orders.values() if order.get("name") == name_value]
     user_orders.sort(key=lambda x: x["id"], reverse=True)
 
     if not user_orders:
@@ -1039,13 +963,13 @@ def my_orders():
         msg = panel_status_message(order["lang"], order["status"])
         cards += f"""
         <div class="card">
-        <b>№{order['id']}</b><br>
-        👤 {order['name']}<br>
-        🫖 {order['chaynitsa']}<br>
-        🏢 {order['office']}<br>
-        🕒 {order['time']}<br><br>
-        {order['items_text']}<br><br>
-        <b>{msg}</b>
+          <b>№{order['id']}</b><br>
+          👤 {order['name']}<br>
+          🫖 {order['chaynitsa']}<br>
+          🏢 {order['office']}<br>
+          🕒 {order['time']}<br><br>
+          {order['items_text']}<br><br>
+          <b>{msg}</b>
         </div>
         """
 
@@ -1060,6 +984,7 @@ def my_orders():
 @app.route("/panel_login", methods=["GET", "POST"])
 def panel_login():
     error = ""
+
     if request.method == "POST":
         password_value = request.form.get("password", "")
 
@@ -1106,7 +1031,7 @@ def panel_home():
     <h2>Панель управления</h2>
     <a class="btn" href="{url_for('panel_chaynitsa', who='Nilufar')}">🫖 Nilufar</a>
     <a class="btn" href="{url_for('panel_chaynitsa', who='Fatma')}">🫖 Fatma</a>
-    <a class="btn btn-orange" href="{url_for('admin_panel')}">👑 Администратор</a>
+    <a class="btn" href="{url_for('admin_panel')}">👑 Администратор</a>
     <a class="btn btn-secondary" href="{url_for('floor')}">↩ На сайт заказов</a>
     """
     return render_page("Panel", body)
@@ -1126,7 +1051,7 @@ def panel_chaynitsa(who):
     mode = request.args.get("mode", "new")
 
     panel_orders = []
-    for _, order in orders.items():
+    for order in orders.values():
         if order.get("chaynitsa") == who:
             if mode == "new":
                 if order.get("status") == "new":
@@ -1148,13 +1073,13 @@ def panel_chaynitsa(who):
         status_badge = status_text(order["lang"], order["status"])
         cards += f"""
         <div class="card">
-        <b>№{order['id']}</b><br>
-        👤 {order['name']}<br>
-        🏬 {order['floor']}<br>
-        🏢 {order['office']}<br>
-        🕒 {order['time']}<br>
-        Статус: <b>{status_badge}</b><br><br>
-        {order['items_text']}
+          <b>№{order['id']}</b><br>
+          👤 {order['name']}<br>
+          🏬 {order['floor']}<br>
+          🏢 {order['office']}<br>
+          🕒 {order['time']}<br>
+          Статус: <b>{status_badge}</b><br><br>
+          {order['items_text']}
         </div>
 
         <div class="row">
@@ -1172,8 +1097,9 @@ def panel_chaynitsa(who):
           </form>
         </div>
         """
+
     if not cards:
-        cards = f"<div class='card'>{t()['orders_empty']}</div>"
+        cards = f"<div class='card'>{t()['no_orders']}</div>"
 
     back_link = url_for("panel_home") if role == "admin" else url_for("panel_chaynitsa", who=who)
 
@@ -1191,7 +1117,7 @@ def admin_panel():
     if not session.get("panel_auth"):
         return redirect(url_for("panel_login"))
     if session.get("panel_role") != "admin":
-        return redirect(url_for("panel"))
+        return redirect(url_for("panel_home"))
 
     panel_orders = list(orders.values())
     panel_orders.sort(key=lambda x: x["id"], reverse=True)
@@ -1200,18 +1126,19 @@ def admin_panel():
     for order in panel_orders:
         cards += f"""
         <div class="card">
-        <b>№{order['id']}</b><br>
-        👤 {order['name']}<br>
-        🫖 {order['chaynitsa']}<br>
-        🏬 {order['floor']}<br>
-        🏢 {order['office']}<br>
-        🕒 {order['time']}<br>
-        Статус: <b>{status_text(order['lang'], order['status'])}</b><br><br>
-        {order['items_text']}
+          <b>№{order['id']}</b><br>
+          👤 {order['name']}<br>
+          🫖 {order['chaynitsa']}<br>
+          🏬 {order['floor']}<br>
+          🏢 {order['office']}<br>
+          🕒 {order['time']}<br>
+          Статус: <b>{status_text(order['lang'], order['status'])}</b><br><br>
+          {order['items_text']}
         </div>
         """
+
     if not cards:
-        cards = f"<div class='card'>{t()['orders_empty']}</div>"
+        cards = f"<div class='card'>{t()['no_orders']}</div>"
 
     body = f"""
     <h2>👑 Администратор</h2>
@@ -1224,22 +1151,25 @@ def admin_panel():
 @app.route("/update_status/<int:order_id>/<status>", methods=["POST"])
 def update_status(order_id, status):
     key = str(order_id)
+
     if key in orders and status in ["accepted", "unavailable", "lunch"]:
         orders[key]["status"] = status
         save_json(ORDERS_FILE, orders)
+
     return redirect(request.form.get("back_to", url_for("panel_home")))
 
 
 @app.route("/telegram_webhook", methods=["POST"])
 def telegram_webhook():
     data = request.get_json(silent=True)
+    print("WEBHOOK DATA:", data)
 
     if not data:
-        return "ok"
+        return "ok", 200
 
     callback = data.get("callback_query")
     if not callback:
-        return "ok"
+        return "ok", 200
 
     callback_query_id = callback.get("id")
     callback_data = callback.get("data", "")
@@ -1250,22 +1180,31 @@ def telegram_webhook():
     if callback_query_id:
         answer_callback_query(callback_query_id)
 
+    print("CALLBACK DATA:", callback_data)
+
     if ":" not in callback_data:
-        return "ok"
+        print("BAD CALLBACK FORMAT")
+        return "ok", 200
 
     status, order_id = callback_data.split(":", 1)
+    order_id = str(order_id)
+
+    print("STATUS:", status, "ORDER_ID:", order_id)
+    print("ORDERS KEYS:", list(orders.keys()))
 
     if order_id not in orders:
-        return "ok"
+        print("ORDER NOT FOUND")
+        return "ok", 200
 
     if status not in ["accepted", "unavailable", "lunch"]:
-        return "ok"
+        print("BAD STATUS")
+        return "ok", 200
 
     orders[order_id]["status"] = status
     save_json(ORDERS_FILE, orders)
 
     order = orders[order_id]
-    lang = order["lang"]
+    lang = order.get("lang", "ru")
 
     if lang == "ru":
         new_text = (
@@ -1290,8 +1229,10 @@ def telegram_webhook():
             f"Durum: {status_text(lang, status)}"
         )
 
-    edit_telegram_message(telegram_chat_id, telegram_message_id, new_text)
-    return "ok"
+    ok = edit_telegram_message(telegram_chat_id, telegram_message_id, new_text)
+    print("EDIT RESULT:", ok)
+
+    return "ok", 200
 
 
 if __name__ == "__main__":
